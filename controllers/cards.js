@@ -1,6 +1,7 @@
 const Card = require('../models/card');
 const BadReqErr = require('../errors/BadReqErr');
 const NotFoundErr = require('../errors/NotFoundErr');
+const NotEnoughRights = require('../errors/NotEnoughRights');
 
 module.exports.getCard = (req, res, next) => {
   Card.find({})
@@ -22,13 +23,9 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.id)
-    .orFail(new Error('notFound'))
-  // eslint-disable-next-line
     .then((card) => {
-      // eslint-disable-next-line
-      if(req.user._id != card.owner){
-        return Promise.reject(new Error('notEnoughRights'));
-      // eslint-disable-next-line
+      if (req.user._id !== card.owner) {
+        throw new NotEnoughRights('У вас недостаточно прав');
       } else {
         Card.deleteOne({ _id: req.params.id })
         // eslint-disable-next-line
@@ -40,12 +37,10 @@ module.exports.deleteCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.message === 'notEnoughRights') {
-        const newErr = new Error('У вас недостаточно прав');
-        newErr.statusCode = 403;
-        next(newErr);
+        throw new NotEnoughRights('У вас недостаточно прав');
       } else if (err.name === 'CastError') {
         throw new BadReqErr('Переданы некорректные данные');
-      } else if (err.message === 'notFound') {
+      } else {
         throw new NotFoundErr('Карточка не найдена');
       }
     })
