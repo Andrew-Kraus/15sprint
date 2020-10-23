@@ -16,13 +16,11 @@ module.exports.getUser = (req, res, next) => {
 
 module.exports.getUserId = (req, res, next) => {
   User.findById(req.params.id)
+    .orFail(() => {
+      throw new NotFoundErr('Такого пользователя не существует');
+    })
     .then((user) => {
       res.send({ data: user });
-    })
-    .catch((err) => {
-      if (err) {
-        throw new NotFoundErr('Такого пользователя не существует');
-      }
     })
     .catch(next);
 };
@@ -56,6 +54,7 @@ module.exports.createUser = (req, res, next) => {
         } else if (err.name === 'MongoError' && err.code === 11000) {
           throw new ConflictError('Этот email адрес уже занят');
         }
+        next(err);
       })
       .catch(next);
   });

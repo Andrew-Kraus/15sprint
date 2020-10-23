@@ -15,33 +15,21 @@ module.exports.createCard = (req, res, next) => {
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        throw new BadReqErr('Переданы некорректные данные');
+        next(new BadReqErr('Переданы некорректные данные'));
       }
-    })
-    .catch(next);
+      next(err);
+    });
 };
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.id)
     .then((card) => {
-      if (req.user._id !== card.owner) {
-        throw new NotEnoughRights('У вас недостаточно прав');
-      } else {
-        Card.deleteOne({ _id: req.params.id })
-        // eslint-disable-next-line
-          .then((card) => {
-            res.send({ data: card });
-          })
-          .catch(next);
-      }
-    })
-    .catch((err) => {
-      if (err.message === 'notEnoughRights') {
-        throw new NotEnoughRights('У вас недостаточно прав');
-      } else if (err.name === 'CastError') {
-        throw new BadReqErr('Переданы некорректные данные');
-      } else {
+      if (card === null) {
         throw new NotFoundErr('Карточка не найдена');
+      } else if (req.user._id !== String(card.owner)) {
+        throw new NotEnoughRights('У вас недостаточно прав');
+      } else {
+        card.remove().then((delCard) => res.send(delCard));
       }
     })
     .catch(next);

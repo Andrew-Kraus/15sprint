@@ -1,5 +1,6 @@
 const cardRouter = require('express').Router();
 const { celebrate, Joi } = require('celebrate');
+Joi.objectId = require('joi-objectid')(Joi);
 const auth = require('../middlewares/auth');
 
 const { getCard, deleteCard, createCard } = require('../controllers/cards');

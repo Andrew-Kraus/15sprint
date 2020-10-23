@@ -2,8 +2,8 @@ const { NODE_ENV, JWT_SECRET = 'secret-key' } = process.env;
 const jwt = require('jsonwebtoken');
 const AuthError = require('../errors/AuthError');
 
-const handleAuthError = (res) => {
-  throw new AuthError('Необходима авторизация')
+const handleAuthError = () => {
+  throw new AuthError('Необходима авторизация');
 };
 // eslint-disable-next-line
 const extractBearerToken = (header) => {
