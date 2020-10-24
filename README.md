@@ -1,3 +1,3 @@
-https://andrewkraus.students.nomoreparties.co
+https://krausmesto.students.nomoreparties.co/
 
-http://130.193.45.148/
+http://84.201.151.69
