@@ -4,8 +4,9 @@ const User = require('../models/user');
 const BadReqErr = require('../errors/BadReqErr');
 const NotFoundErr = require('../errors/NotFoundErr');
 const AuthError = require('../errors/AuthError');
+const ConflictError = require('../errors/ConflictError');
 
-const { NODE_ENV, JWT_SECRET = 'dev-key' } = process.env;
+const { NODE_ENV, JWT_SECRET = 'secret-key' } = process.env;
 
 module.exports.getUser = (req, res, next) => {
   User.find({})
@@ -15,13 +16,11 @@ module.exports.getUser = (req, res, next) => {
 
 module.exports.getUserId = (req, res, next) => {
   User.findById(req.params.id)
+    .orFail(() => {
+      throw new NotFoundErr('Такого пользователя не существует');
+    })
     .then((user) => {
       res.send({ data: user });
-    })
-    .catch((err) => {
-      if (err) {
-        throw new NotFoundErr('Такого пользователя не существует');
-      }
     })
     .catch(next);
 };
@@ -52,11 +51,10 @@ module.exports.createUser = (req, res, next) => {
       .catch((err) => {
         if (err.name === 'ValidationError') {
           throw new BadReqErr('Переданы некорректные данные');
-        } else if (err.name === 'MongoError') {
-          const newErr = new Error('Этот email уже занят');
-          newErr.statusCode = 409;
-          next(newErr);
+        } else if (err.name === 'MongoError' && err.code === 11000) {
+          throw new ConflictError('Этот email адрес уже занят');
         }
+        next(err);
       })
       .catch(next);
   });
@@ -67,7 +65,7 @@ module.exports.login = (req, res, next) => {
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'secret-key', { expiresIn: '7d' });
       res.cookie('jwt', token, {
         maxAge: 900000,
         httpOnly: true,

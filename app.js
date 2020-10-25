@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { errors } = require('celebrate');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
+const NotFoundErr = require('./errors/NotFoundErr');
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -23,14 +24,19 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 
 app.use(requestLogger);
 
+app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Сервер сейчас упадёт');
+  }, 0);
+});
+
 app.use('/users', getUser);
 app.use('/cards', getCard);
 app.post('/signin', login);
 app.post('/signup', createUser);
 
-app.use('/', (req, res) => {
-  res.set({ 'Content-type': 'Application/json, Charset=utf-8' });
-  res.status(404).end(JSON.stringify({ message: 'Запрашиваемый ресурс не найден' }), 'utf8');
+app.use('*', () => {
+  throw new NotFoundErr('Запрашиваемый ресурс не найден');
 });
 
 app.listen(PORT, () => {
@@ -40,7 +46,7 @@ app.listen(PORT, () => {
 
 app.use(errorLogger);
 app.use(errors());
-
+// eslint-disable-next-line
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
   res
